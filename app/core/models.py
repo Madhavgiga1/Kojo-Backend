@@ -31,3 +31,9 @@ class Student(AbstractBaseUser,PermissionsMixin):
 
     objects=StudentManager()
     USERNAME_FIELD='application_no'
+
+class Assignments(models.Model):
+    name=models.CharField()
+    description=models.TextField()
+    duedate=models.DateTimeField()
+
