@@ -37,3 +37,6 @@ class Assignments(models.Model):
     description=models.TextField()
     duedate=models.DateTimeField()
 
+class Quiz(models.Model):
+    name=models.CharField()
+    description=models.TextField()
