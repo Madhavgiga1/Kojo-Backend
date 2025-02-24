@@ -4,7 +4,6 @@ from core.permissions import IsTeacher, IsAuthenticated, IsStudent
 from core.models import (
     Assignment,
     AssignmentSubmission,
-    TeachingAssignment,
 )
 from .serializers import(
     AssignmentSerializer,
@@ -38,6 +37,12 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    def get_queryset(self):
+        if self.request.user.role == 'teacher':
+            return self.queryset.filter(created_by=self.request.user)
+        else:
+            return self.queryset.filter(section=self.request.user.student.section)
 
 class AssignmentSubmissionViewSet(viewsets.ModelViewSet):
     serializer_class = AssignmentSubmissionSerializer
