@@ -5,7 +5,8 @@ from django.urls import path,include
 router=DefaultRouter()
 
 router.register('notices',NoticeViewSet)
+app_name='notices'
 
-url_patterns=[
-    path('notices',include(router.urls))
+urlpatterns=[
+    path('',include(router.urls))
 ]

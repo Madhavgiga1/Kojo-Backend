@@ -1,71 +1,79 @@
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
-    PermissionsMixin,
-    BaseUserManager,
-    AbstractUser
+    PermissionsMixin,  # Add this import
+    BaseUserManager
 )
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-# Create your models here.
+
 class CustomUserManager(BaseUserManager):
-    def create_user(self, id_number, password, **extra_fields):
-        if not id_number:
+    def create_user(self, identification_number, password, **extra_fields):
+        if not identification_number:
             raise ValueError('ID number must be set')
-        user = self.model(identification_number=id_number, **extra_fields)
+        user = self.model(identification_number=identification_number, **extra_fields)
         user.set_password(password)
         user.save()
         return user
 
-    def create_superuser(self, id_number, password, **extra_fields):
+    def create_superuser(self, identification_number, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        return self.create_user(id_number, password, **extra_fields)
-    
+        extra_fields.setdefault('role', 'student')  # Set a default role for superusers
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+            
+        return self.create_user(identification_number, password, **extra_fields)
 
-class User(AbstractBaseUser):
-    identification_number=models.CharField(max_length=15,primary_key=True)
-    ROLES=(
-        ('teacher','Teacher'),
-        ('student','Student')
+# Make User inherit from both AbstractBaseUser and PermissionsMixin
+class User(AbstractBaseUser, PermissionsMixin):
+    identification_number = models.CharField(max_length=15, primary_key=True)
+    ROLES = (
+        ('teacher', 'Teacher'),
+        ('student', 'Student')
     )
-    role=models.CharField(max_length=10,choices=ROLES)
-    is_active=models.BooleanField(default=True)
-    is_staff=models.BooleanField(default=False)
-    date_joined=models.DateTimeField(auto_now_add=True)
+    role = models.CharField(max_length=10, choices=ROLES)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
-    objects=CustomUserManager()
+    objects = CustomUserManager()
 
-    username_field=identification_number
-    REQUIRED_FIELDS=['role']
+    USERNAME_FIELD = 'identification_number'
+    REQUIRED_FIELDS = ['role']
 
     def __str__(self) -> str:
         return self.identification_number
 
+#programs like BTech, MTech, MBA
 class Program(models.Model):
     program_code=models.CharField(max_length=10,primary_key=True)
     name=models.CharField(max_length=100)
 
+#specialization branches like CSE, ECE, MECH
 class SpecializationBranch(models.Model):
     program=models.ForeignKey(Program,on_delete=models.CASCADE)
     name=models.CharField(max_length=100)
     code=models.CharField(max_length=10,primary_key=True)
     total_credits=models.IntegerField(blank=True)
 
+#sections like IT1,IT2,IT3
 class Section(models.Model):
-    name=models.CharField(max_length=5)
+    name=models.CharField(max_length=10)
     specialization_branch=models.ForeignKey(SpecializationBranch,on_delete=models.CASCADE)
-    batch=models.CharField(max_length=4)
+    batch=models.CharField(max_length=4,blank=True)
     total_students=models.IntegerField(blank=True)
     def __str__(self):
-        return f"{self.department} {self.batch} {self.name}"
+        return f"{self.specialization_branch} {self.batch} {self.name}"
 
 class Student(models.Model):
 
     user=models.OneToOneField(User,on_delete=models.CASCADE, primary_key=True)
     first_name=models.CharField(max_length=100,blank=False)
     last_name=models.CharField(max_length=100,blank=False)
-    phone_number=models.PhoneNumberField(_("Phone number"), blank=True)
     batch=models.CharField(max_length=4)
     section=models.ForeignKey(Section,on_delete=models.CASCADE)
 
@@ -81,7 +89,6 @@ class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     first_name=models.CharField(max_length=100)
     last_name=models.CharField(max_length=100)
-    phone_number=models.models.PhoneNumberField(_("Phone number"), blank=True)
     department = models.CharField(max_length=100)
     specialization_branch = models.ForeignKey(SpecializationBranch,on_delete=models.CASCADE)
     
@@ -91,7 +98,7 @@ class Teacher(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Teacher: {self.user.id_number}-{self.first_name}-{self.last_name}"
+        return f"Teacher: {self.user.identification_number}-{self.first_name}-{self.last_name}"
     
 class Subject(models.Model):
     
@@ -122,6 +129,8 @@ class TeachingAssignment(models.Model):
     def __str__(self):
         return f'{self.teacher} - {self.subject} - {self.section}'
 
+def get_assignment_path(instance, filename):
+    return f'assignments/{instance.section}/{instance.name}/{filename}'
 class Assignment(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -129,7 +138,7 @@ class Assignment(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     total_marks = models.IntegerField(blank=True)
     due_date = models.DateField()
-    assignment_pdf = models.FileField(upload_to=f'assignments/{section}/{name}')
+    assignment_pdf = models.FileField(upload_to=get_assignment_path)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -241,7 +250,7 @@ class StudentAnswer(models.Model):
         unique_together = ['quiz_attempt', 'question']  # One answer per question per attempt
 
 # Proctoring system model
-class ProctoringImage(models.Model):
+"""class ProctoringImage(models.Model):
     quiz_attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='proctoring_images')
     image = models.ImageField(upload_to='proctoring_images/%Y/%m/%d/')
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -250,4 +259,5 @@ class ProctoringImage(models.Model):
     
     def __str__(self):
         return f"Proctoring image for {self.quiz_attempt} at {self.timestamp}"
+        """
     

@@ -5,11 +5,11 @@ from core.models import (Assignment,AssignmentSubmission)
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
-        fields = ['id', 'title', 'description', 'due_date', 'max_marks', 'created_by']
+        fields ='__all__'
         read_only_fields = ['created_by']
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
-        fields = ['id', 'assignment', 'submission_content', 'submitted_at', 'marks_obtained']
+        fields = '__all__'
         read_only_fields = ['student', 'submitted_at']
