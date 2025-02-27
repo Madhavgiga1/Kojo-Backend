@@ -17,6 +17,7 @@ urlpatterns = [
         name='api-docs',
     ),
     path('api/assignments/', include('assignments.urls')),
-    #path('api/users/', include('user.urls')),
-    path('api/notices', include('notices.urls')),
+    path('api/users/', include('user.urls')),
+    path('api/notices/', include('notices.urls')),
+    path('api/quizzes/', include('quizzes.urls')),
 ]

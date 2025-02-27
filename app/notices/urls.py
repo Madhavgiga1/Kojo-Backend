@@ -4,8 +4,8 @@ from django.urls import path,include
 
 router=DefaultRouter()
 
-router.register('notices',NoticeViewSet)
-app_name='notices'
+router.register('',NoticeViewSet)
+app_name='notice'
 
 urlpatterns=[
     path('',include(router.urls))

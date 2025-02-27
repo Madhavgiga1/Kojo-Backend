@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'assignments',
     'user',
     'notices',
-    'quizzes'
+    'quizzes',
 ]
 
 MIDDLEWARE = [
@@ -135,8 +135,32 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # Use token authentication
+        'rest_framework.authentication.SessionAuthentication',  # For browsable API
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
+    'TITLE': 'Quiz System API',
+    'DESCRIPTION': 'All APIs for managing assignments, notices ,quizzes, students, and teachers',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    # # Token Authentication schema
+    # 'SECURITY': [
+    #     {
+    #         'Token': {
+    #             'type': 'apiKey',
+    #             'name': 'Authorization',
+    #             'in': 'header'
+    #         }
+    #     }
+    # ],
+    # 'PREPROCESSING_HOOKS': ['path.to.your.preprocessing_hook'] if DEBUG else [],
+    # 'POSTPROCESSING_HOOKS': ['drf_spectacular.hooks.postprocess_schema_enums'],
+    # 'SCHEMA_PATH_PREFIX': r'/api/',
 }

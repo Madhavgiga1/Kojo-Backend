@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from core.models import Quiz, Question, QuestionOption, QuizAttempt, StudentAnswer, ProctoringImage
+from core.models import Quiz, Question, QuestionOption, QuizAttempt, StudentAnswer
+#, ProctoringImage
 
 class QuestionOptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,6 +28,7 @@ class QuizSerializer(serializers.ModelSerializer):
             'due_date', 'start_time', 'end_time', 'is_proctored', 
             'created_at', 'questions', 'is_active'
         ]
+        read_only_fields = ['sections','subject','created_at', 'is_active']
 
 class StudentAnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,8 +54,8 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['start_time', 'end_time', 'is_completed', 'marks_obtained']
 
-class ProctoringImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProctoringImage
-        fields = ['id', 'quiz_attempt', 'image', 'timestamp', 'flagged', 'notes']
-        read_only_fields = ['timestamp', 'flagged', 'notes']  # These are set by teachers/admins
+# class ProctoringImageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ProctoringImage
+#         fields = ['id', 'quiz_attempt', 'image', 'timestamp', 'flagged', 'notes']
+#         read_only_fields = ['timestamp', 'flagged', 'notes']  # These are set by teachers/admins

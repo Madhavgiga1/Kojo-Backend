@@ -1,15 +1,17 @@
-from django.urls import path,include
-from . import views
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from views import QuizViewSet,QuestionViewSet,AnswerViewSet,QuizSubmissionViewSet,QuizSubmissionAnswerViewSet
-router=DefaultRouter()
+from .views import QuizViewSet, StudentAnswerViewSet, QuestionViewSet, QuizSubmissionViewSet, QuizSubmissionAnswerViewSet
 
-router.register(r'quizzes',QuizViewSet)
-router.register(r'questions',QuestionViewSet)  
-router.register(r'answers',AnswerViewSet)
-router.register(r'quiz-submissions',QuizSubmissionViewSet)
-router.register(r'quiz-submission-answers',QuizSubmissionAnswerViewSet)
+router = DefaultRouter()
+
+app_name = 'quizzes'
+# Add basename parameter to fix the AssertionError
+router.register('', QuizViewSet, basename='quiz')
+router.register('answers', StudentAnswerViewSet, basename='student-answer')
+router.register('questions', QuestionViewSet, basename='question')  
+router.register('submissions', QuizSubmissionViewSet, basename='quiz-submission')
+router.register('submission-answers', QuizSubmissionAnswerViewSet, basename='submission-answer')
 
 urlpatterns = [
-    path('api/',include(router.urls))
+    path('', include(router.urls))
 ]

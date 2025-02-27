@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Sum
-from core.models import Student,Teacher,Quiz, Question, QuestionOption, QuizAttempt, StudentAnswer, ProctoringImage
+from core.models import Student,Quiz, Question, QuestionOption, QuizAttempt, StudentAnswer
 from .serializers import (
     QuizSerializer, QuestionSerializer, QuizAttemptSerializer, 
-    StudentAnswerSerializer, ProctoringImageSerializer
+    StudentAnswerSerializer
 )
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -113,26 +113,99 @@ class StudentAnswerViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
-class ProctoringImageViewSet(viewsets.ModelViewSet):
-    serializer_class = ProctoringImageSerializer
+class QuestionViewSet(viewsets.ModelViewSet):
+    serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
         if user.role == 'teacher':
-            teacher = Teacher.objects.get(user=user)
-            # Teachers can see proctoring images for quizzes they created
-            return ProctoringImage.objects.filter(quiz_attempt__quiz__teacher=teacher)
-        return ProctoringImage.objects.none()
+            # Teachers see all questions for quizzes they created
+            return Question.objects.filter(quiz__teacher__user=user)
+        elif user.role == 'student':
+            # Students see questions for active quizzes in their section
+            student = Student.objects.get(user=user)
+            return Question.objects.filter(
+                quiz__sections=student.section,
+                quiz__start_time__lte=timezone.now(),
+                quiz__end_time__gte=timezone.now()
+            )
+        return Question.objects.none()
+
+class QuizSubmissionViewSet(viewsets.ModelViewSet):
+    serializer_class = QuizAttemptSerializer
+    permission_classes = [IsAuthenticated]
     
-    def create(self, request, *args, **kwargs):
-        attempt_id = request.data.get('quiz_attempt')
-        # Verify the attempt belongs to the current student
-        if request.user.role == 'student':
-            student = Student.objects.get(user=request.user)
-            attempt = QuizAttempt.objects.filter(id=attempt_id, student=student).first()
-            if not attempt:
-                return Response({"error": "Unauthorized"}, 
-                               status=status.HTTP_403_FORBIDDEN)
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'teacher':
+            # Teachers see all submissions for quizzes they created
+            return QuizAttempt.objects.filter(quiz__teacher__user=user)
+        elif user.role == 'student':
+            # Students see only their own submissions
+            student = Student.objects.get(user=user)
+            return QuizAttempt.objects.filter(student=student)
+        return QuizAttempt.objects.none()
+    
+    def perform_create(self, serializer):
+        """Ensure the student can only create submissions for themselves"""
+        if self.request.user.role == 'student':
+            student = Student.objects.get(user=self.request.user)
+            serializer.save(student=student)
+        else:
+            serializer.save()
+
+class QuizSubmissionAnswerViewSet(viewsets.ModelViewSet):
+    serializer_class = StudentAnswerSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'teacher':
+            # Teachers see all answers for submissions to quizzes they created
+            return StudentAnswer.objects.filter(quiz_attempt__quiz__teacher__user=user)
+        elif user.role == 'student':
+            # Students see only their own answers
+            student = Student.objects.get(user=user)
+            return StudentAnswer.objects.filter(quiz_attempt__student=student)
+        return StudentAnswer.objects.none()
+    
+    def perform_create(self, serializer):
+        # Auto-grade multiple choice questions
+        question = Question.objects.get(id=self.request.data.get('question'))
+        selected_option_id = self.request.data.get('selected_option')
+        
+        is_correct = False
+        marks_awarded = 0
+        
+        if question.question_type in ['multiple_choice', 'true_false'] and selected_option_id:
+            option = QuestionOption.objects.get(id=selected_option_id)
+            is_correct = option.is_correct
+            marks_awarded = question.marks if is_correct else 0
+        
+        serializer.save(is_correct=is_correct, marks_awarded=marks_awarded)
+
+        
+# class ProctoringImageViewSet(viewsets.ModelViewSet):
+#     serializer_class = ProctoringImageSerializer
+#     permission_classes = [IsAuthenticated]
+    
+#     def get_queryset(self):
+#         user = self.request.user
+#         if user.role == 'teacher':
+#             teacher = Teacher.objects.get(user=user)
+#             # Teachers can see proctoring images for quizzes they created
+#             return ProctoringImage.objects.filter(quiz_attempt__quiz__teacher=teacher)
+#         return ProctoringImage.objects.none()
+    
+#     def create(self, request, *args, **kwargs):
+#         attempt_id = request.data.get('quiz_attempt')
+#         # Verify the attempt belongs to the current student
+#         if request.user.role == 'student':
+#             student = Student.objects.get(user=request.user)
+#             attempt = QuizAttempt.objects.filter(id=attempt_id, student=student).first()
+#             if not attempt:
+#                 return Response({"error": "Unauthorized"}, 
+#                                status=status.HTTP_403_FORBIDDEN)
                 
-        return super().create(request, *args, **kwargs)
+#         return super().create(request, *args, **kwargs)
