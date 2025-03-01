@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # Django Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+      - kafka
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/classroom_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn app.wsgi:application --bind 0.0.0.0:8000"
+    restart: always
+
+  # PostgreSQL Database
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=classroom_db
+    ports:
+      - "5432:5432"
+    restart: always
+
+  # Redis for Caching and Celery
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # Celery Worker for Background Tasks
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - app
+      - redis
+    command: celery -A app worker -l INFO
+    restart: always
+
+  # Celery Beat for Scheduled Tasks
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - celery
+    command: celery -A app beat -l INFO
+    restart: always
+
+  # Nginx for Serving Static Files and Reverse Proxy
+  nginx:
+    image: nginx:1.21
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - app
+    restart: always
+
+  # Elasticsearch for Full-Text Search
+  elasticsearch:
+    image: elasticsearch:7.14.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: always
+
+  # Zookeeper (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: always
+
+  # Kafka for Event Streaming
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_MESSAGE_MAX_BYTES: 10000000
+    restart: always
+
+  # Kafka Consumer for Processing Events and Notifications
+  kafka-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - kafka
+      - app
+    command: python manage.py run_notification_consumer
+    restart: always
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  elasticsearch_data:

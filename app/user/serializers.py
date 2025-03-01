@@ -18,9 +18,12 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = '__all__'
+        read_only_fields = ['user']
     
     def create(self, validated_data):
-        user_data = validated_data.pop('user')
+        identification_number = validated_data.pop('identification_number')
+        password = validated_data.pop('password')
+        user_data = {'identification_number': identification_number, 'password': password}
         # Create user with student role
         user = User.objects.create_user(
             id_number=user_data['identification_number'], 
