@@ -145,22 +145,40 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Quiz System API',
-    'DESCRIPTION': 'All APIs for managing assignments, notices ,quizzes, students, and teachers',
+    'TITLE': 'Classroom API',
+    'DESCRIPTION': 'API for classroom management with assignments, quizzes, and more',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    
+    # UI customization
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': False,
+        'defaultModelsExpandDepth': 1,
+        'defaultModelExpandDepth': 1,
+        'defaultModelRendering': 'example',
+        'displayRequestDuration': True,
+        'docExpansion': 'none',
+        'filter': True,
+        'showExtensions': True,
+        'showCommonExtensions': True,
+    },
+    
+    # Schema customization
     'COMPONENT_SPLIT_REQUEST': True,
-    # # Token Authentication schema
-    # 'SECURITY': [
-    #     {
-    #         'Token': {
-    #             'type': 'apiKey',
-    #             'name': 'Authorization',
-    #             'in': 'header'
-    #         }
-    #     }
-    # ],
-    # 'PREPROCESSING_HOOKS': ['path.to.your.preprocessing_hook'] if DEBUG else [],
-    # 'POSTPROCESSING_HOOKS': ['drf_spectacular.hooks.postprocess_schema_enums'],
-    # 'SCHEMA_PATH_PREFIX': r'/api/',
+    'COMPONENT_NO_READ_ONLY_REQUIRED': False,
+    
+    # Date/time format customization
+    'DEFAULT_FIELD_INSPECTORS': [
+        'drf_spectacular.contrib.django_filters.DjangoFilterInspector',
+        'drf_spectacular.plumbing.build_basic_type',
+        'drf_spectacular.plumbing.build_array_type',
+        # ... other inspectors
+    ],
 }
+
+# Add this to ensure date formats are handled correctly
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATE_FORMAT = '%Y-%m-%d'
+DATE_INPUT_FORMATS = ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y']

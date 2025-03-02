@@ -29,5 +29,16 @@ services:
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
 
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db  # This should match your PostgreSQL service name
+      ADMINER_DESIGN: pepa-linha  # Optional: use a nicer theme
+    depends_on:
+      - db
+
 volumes:
   dev-db-data:

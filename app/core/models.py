@@ -57,17 +57,15 @@ class Program(models.Model):
 class SpecializationBranch(models.Model):
     program=models.ForeignKey(Program,on_delete=models.CASCADE)
     name=models.CharField(max_length=100)
-    code=models.CharField(max_length=10,primary_key=True)
+    specialization_branch_code=models.CharField(max_length=20,primary_key=True)
     total_credits=models.IntegerField(blank=True)
 
 #sections like IT1,IT2,IT3
 class Section(models.Model):
-    name=models.CharField(max_length=10)
+    section_code=models.CharField(max_length=20,primary_key=True,default='IT-E')
     specialization_branch=models.ForeignKey(SpecializationBranch,on_delete=models.CASCADE)
-    batch=models.CharField(max_length=4,blank=True)
     total_students=models.IntegerField(blank=True)
-    def __str__(self):
-        return f"{self.specialization_branch} {self.batch} {self.name}"
+
 
 class Student(models.Model):
 
@@ -86,6 +84,7 @@ class Student(models.Model):
         return f"Student: {self.user.identification_number}-{self.first_name}-{self.last_name}"
     
 class Teacher(models.Model):
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     first_name=models.CharField(max_length=100)
     last_name=models.CharField(max_length=100)
@@ -102,12 +101,12 @@ class Teacher(models.Model):
     
 class Subject(models.Model):
     
-    code=models.CharField(max_length=10,primary_key=True)
+    subject_code=models.CharField(max_length=10,primary_key=True,default='IT2101')
     specialization_branch=models.ForeignKey(SpecializationBranch,on_delete=models.CASCADE)
     name=models.CharField(max_length=100)
     credits=models.IntegerField(blank=True)
     def __str__(self):
-        return self.code
+        return self.subject_code
     
 def get_submission_path(instance, filename):
     # instance is the AssignmentSubmission instance
@@ -136,6 +135,7 @@ class Assignment(models.Model):
     description = models.TextField(blank=True)
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    subject=models.ForeignKey(Subject,on_delete=models.CASCADE)
     total_marks = models.IntegerField(blank=True)
     due_date = models.DateField()
     assignment_pdf = models.FileField(upload_to=get_assignment_path)
@@ -162,8 +162,8 @@ class Notices(models.Model):
     title=models.CharField(max_length=100,blank=False)
     description=models.TextField(blank=False)
     created_at=models.DateTimeField(auto_now_add=True)
-    sections=models.ManyToManyField(Section)
-    teachers=models.ForeignKey(Teacher,on_delete=models.CASCADE)
+    section=models.ManyToManyField(Section)
+    teacher=models.ForeignKey(Teacher,on_delete=models.CASCADE)
 
 def question_image_path(instance, filename):
     # Upload path: quiz_images/quiz_id/question_id/filename

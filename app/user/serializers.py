@@ -9,53 +9,72 @@ class UserSerializer(serializers.ModelSerializer):
 
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     # Basic user fields
-    identification_number = serializers.CharField(max_length=15, source='user.identification_number')
-    password = serializers.CharField(max_length=128, write_only=True, source='user.password')
-    
-    # Section field with queryset for dropdown
-    section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all())
-    
+    identification_number = serializers.CharField(max_length=15, write_only=True)
+    password = serializers.CharField(max_length=128, write_only=True, style={'input_type': 'password'})
+    section_code = serializers.CharField(max_length=10, write_only=True)
+
     class Meta:
         model = Student
-        fields = '__all__'
-        read_only_fields = ['user']
-    
+        fields = ['identification_number', 'password', 'first_name', 'last_name', 'batch', 'section_code']
+        extra_kwargs = {
+            'identification_number': {'write_only': True},
+            'password': {'write_only': True},
+        }
+
     def create(self, validated_data):
         identification_number = validated_data.pop('identification_number')
         password = validated_data.pop('password')
-        user_data = {'identification_number': identification_number, 'password': password}
-        # Create user with student role
-        user = User.objects.create_user(
-            id_number=user_data['identification_number'], 
-            password=user_data['password'],
-            role='student'
-        )
+        section_code = validated_data.pop('section_code')
+
+        # Check if user exists
+        user = User.objects.filter(identification_number=identification_number).first()
+        if not user:
+            # Create new user
+            user = User.objects.create_user(
+                identification_number=identification_number,
+                password=password,
+                role='student'
+            )
+        elif user.role != 'student':
+            raise serializers.ValidationError(
+                {"identification_number": "This ID is already registered with a different role."}
+            )
+
+        # Get the section instance
+        section = Section.objects.get(section_code=section_code)
+
         # Create student profile
-        student = Student.objects.create(user=user, **validated_data)
+        student = Student.objects.create(user=user, section=section, **validated_data)
         return student
 
 class TeacherRegistrationSerializer(serializers.ModelSerializer):
     # Basic user fields
-    identification_number = serializers.CharField(max_length=15, source='user.identification_number')
-    password = serializers.CharField(max_length=128, write_only=True, source='user.password')
-    
-    # SpecializationBranch field with queryset for dropdown
-    specialization_branch = serializers.PrimaryKeyRelatedField(queryset=SpecializationBranch.objects.all())
+    identification_number = serializers.CharField(max_length=15, write_only=True)
+    password = serializers.CharField(max_length=128, write_only=True, style={'input_type': 'password'})
+    specialization_branch_code = serializers.CharField(max_length=20, write_only=True)
     
     class Meta:
         model = Teacher
-        fields = '__all__'
+        fields = ['identification_number', 'password', 'first_name', 'last_name', 'department', 'specialization_branch_code']
+        extra_kwargs = {
+            'identification_number': {'write_only': True},
+            'password': {'write_only': True},
+        }
     
     def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        # Create user with teacher role
-        user = User.objects.create_user(
-            id_number=user_data['identification_number'], 
-            password=user_data['password'],
-            role='teacher'
-        )
-        # Create teacher profile
-        teacher = Teacher.objects.create(user=user, **validated_data)
+        
+        identification_number = validated_data.pop('identification_number')
+        password = validated_data.pop('password')
+        specialization_branch_code=validated_data.pop('specialization_branch_code')
+        user=User.objects.filter(identification_number=identification_number).first()
+        if user is None:
+            User.objects.create_user(
+                identification_number=identification_number, 
+                password=password,
+                role='teacher'
+            )
+        specialization_branch=SpecializationBranch.objects.get(specialization_branch_code=specialization_branch_code)
+        teacher = Teacher.objects.create(user=user,specialization_branch=specialization_branch, **validated_data)
         return teacher
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -67,7 +86,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['identification_number', 'role', 'first_name', 'last_name', 
-                  'phone_number', 'batch', 'section', 'section_name', 'specialization_branch_name']
+                   'batch', 'section', 'section_name', 'specialization_branch_name']
         read_only_fields = ['identification_number', 'role', 'section_name', 'specialization_branch_name']
 
 class TeacherProfileSerializer(serializers.ModelSerializer):
