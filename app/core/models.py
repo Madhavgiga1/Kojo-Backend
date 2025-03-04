@@ -170,9 +170,9 @@ def question_image_path(instance, filename):
     return f'quiz_images/quiz_{instance.quiz.id}/question_{instance.id}/{filename}'
 
 class Quiz(models.Model):
-    name = models.CharField(max_length=150)
-    description = models.TextField(blank=True)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE) 
+    quiz_name = models.CharField(max_length=150)
+    quiz_description = models.TextField(blank=True)
+    quiz_subject = models.ForeignKey(Subject, on_delete=models.CASCADE) 
     sections = models.ManyToManyField(Section)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     total_marks = models.IntegerField()
@@ -194,8 +194,7 @@ class Quiz(models.Model):
 class Question(models.Model):
     QUESTION_TYPES = (
         ('multiple_choice', 'Multiple Choice'),
-        ('true_false', 'True/False'),
-        ('short_answer', 'Short Answer'),
+        
     )
     
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
