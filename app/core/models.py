@@ -103,7 +103,7 @@ class Subject(models.Model):
     
     subject_code=models.CharField(max_length=10,primary_key=True,default='IT2101')
     specialization_branch=models.ForeignKey(SpecializationBranch,on_delete=models.CASCADE)
-    name=models.CharField(max_length=100)
+    subject_name=models.CharField(max_length=100)
     credits=models.IntegerField(blank=True)
     def __str__(self):
         return self.subject_code
@@ -119,7 +119,7 @@ class TeachingAssignment(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    academic_year = models.CharField(max_length=9)  # e.g., "2023-2024"
+    academic_year = models.CharField(max_length=15)  # e.g., "2023-2024"
     semester = models.IntegerField()
 
     class Meta:
@@ -185,7 +185,7 @@ class Quiz(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return self.name
+        return self.quiz_name
         
     @property
     def is_active(self):
@@ -196,57 +196,80 @@ class Question(models.Model):
         ('multiple_choice', 'Multiple Choice'),
         
     )
-    
+    question_code=models.UUIDField(primary_key=True,editable=False)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
-    text = models.TextField()
+    question_text = models.TextField()
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
     image = models.ImageField(upload_to=question_image_path, blank=True, null=True)
+    correct_option_code=models.UUIDField(blank=True)
     marks = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     
     class Meta:
         ordering = ['order']
     
-    def __str__(self):
-        return f"Q{self.order}: {self.text[:30]}..."
-
 class QuestionOption(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
-    text = models.CharField(max_length=255)
-    is_correct = models.BooleanField(default=False)
+    option_code=models.UUIDField(primary_key=True,editable=False)
+    related_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
+    text = models.TextField(blank=False)
+    # is_correct = models.BooleanField(default=False)
     
     def __str__(self):
         return self.text
+    
 class QuizAttempt(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    start_time = models.DateTimeField(auto_now_add=True)
-    end_time = models.DateTimeField(null=True, blank=True)
+    quiz_attempt_code=models.UUIDField(primary_key=True,editable=False)
+    related_student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    related_quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    marks_obtained = models.IntegerField(default=0)
     is_completed = models.BooleanField(default=False)
-    marks_obtained = models.IntegerField(null=True, blank=True)
     
     def __str__(self):
-        return f"{self.student} - {self.quiz}"
+        return f"{self.related_student} - {self.related_quiz}"
         
     class Meta:
-        unique_together = ['student', 'quiz']  # One attempt per student per quiz
+        unique_together = ['related_student', 'related_quiz']  # One attempt per student per quiz
         
     @property
     def duration(self):
-        if self.end_time:
-            return self.end_time - self.start_time
+        if self.ended_at:
+            return self.ended_at - self.started_at
         return None
 
-class StudentAnswer(models.Model):
+    def get_total_questions(self):
+        """Get the total number of questions in the quiz."""
+        return self.related_quiz.questions.count()
+    
+    def get_answered_questions(self):
+        """Get the number of questions answered in this attempt."""
+        return self.answers.count()
+    
+    def get_correct_answers(self):
+        """Get the number of correctly answered questions."""
+        return self.answers.filter(selected_option__is_correct=True).count()
+    
+    
+    def get_score(self):
+        selected_answers=self.answers.all()
+        score=0
+        for answer in selected_answers:
+            score+=(answer.question)
+        return (self.get_correct_answers())*(self.related_quiz.marks)
+    
+
+class StudentSelectedQuestionOption(models.Model):
     quiz_attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     selected_option = models.ForeignKey(QuestionOption, on_delete=models.CASCADE, null=True, blank=True)
-    text_answer = models.TextField(blank=True)  # For short answer questions
-    is_correct = models.BooleanField(default=False)
-    marks_awarded = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    marks_awarded = models.PositiveIntegerField(default=0)
+     
     
     class Meta:
         unique_together = ['quiz_attempt', 'question']  # One answer per question per attempt
+
+  
 
 # Proctoring system model
 """class ProctoringImage(models.Model):

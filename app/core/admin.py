@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import (
     User, Student, Teacher, Program, SpecializationBranch, Section, 
     Subject, TeachingAssignment, Assignment, AssignmentSubmission,
-    Quiz, Question, QuestionOption, QuizAttempt, StudentAnswer, Notices
+    Quiz, Question, QuestionOption, QuizAttempt, StudentSelectedQuestionOption, Notices
 )
 
 # class UserAdmin(BaseUserAdmin):
@@ -54,5 +54,5 @@ admin.site.register(Quiz)
 admin.site.register(Question)
 admin.site.register(QuestionOption)
 admin.site.register(QuizAttempt)
-admin.site.register(StudentAnswer)
+admin.site.register(StudentSelectedQuestionOption)
 admin.site.register(Notices)
