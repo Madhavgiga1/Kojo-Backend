@@ -4,6 +4,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,  # Add this import
     BaseUserManager
 )
+import uuid
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -196,7 +197,7 @@ class Question(models.Model):
         ('multiple_choice', 'Multiple Choice'),
         
     )
-    question_code=models.UUIDField(primary_key=True,editable=False)
+    question_code=models.UUIDField(primary_key=True,editable=False, default=uuid.uuid4)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
@@ -209,7 +210,7 @@ class Question(models.Model):
         ordering = ['order']
     
 class QuestionOption(models.Model):
-    option_code=models.UUIDField(primary_key=True,editable=False)
+    option_code=models.UUIDField(primary_key=True,editable=False, default=uuid.uuid4)
     related_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
     text = models.TextField(blank=False)
     # is_correct = models.BooleanField(default=False)
@@ -218,7 +219,7 @@ class QuestionOption(models.Model):
         return self.text
     
 class QuizAttempt(models.Model):
-    quiz_attempt_code=models.UUIDField(primary_key=True,editable=False)
+    quiz_attempt_code=models.UUIDField(primary_key=True,editable=False,default=uuid.uuid4)
     related_student = models.ForeignKey(Student, on_delete=models.CASCADE)
     related_quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
     started_at = models.DateTimeField(auto_now_add=True)
@@ -255,8 +256,8 @@ class QuizAttempt(models.Model):
         selected_answers=self.answers.all()
         score=0
         for answer in selected_answers:
-            score+=(answer.question)
-        return (self.get_correct_answers())*(self.related_quiz.marks)
+            score+=(answer.marks_awarded)
+        return score
     
 
 class StudentSelectedQuestionOption(models.Model):
