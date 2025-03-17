@@ -1,4 +1,4 @@
-# Quiz Management System
+# Classroom Management System
 
 [![Django](https://img.shields.io/badge/Django-3.2+-green.svg)](https://www.djangoproject.com/)
 [![DRF](https://img.shields.io/badge/DRF-3.12+-red.svg)](https://www.django-rest-framework.org/)
@@ -9,7 +9,10 @@
 [![ElasticSearch](https://img.shields.io/badge/Elasticsearch-7.10+-005571.svg)](https://www.elastic.co/)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-2496ED.svg)](https://www.docker.com/)
 
-A robust, scalable quiz application built with Django REST Framework, Kafka, and PostgreSQL. This system allows educators to create quizzes, students to take them, and provides real-time analytics through an event-driven architecture.
+A robust, scalable classroom management application built with Django REST Framework, Kafka, and PostgreSQL, Nginx, Docker and Kubernetes. 
+This system allows educators to create quizzes, students to take them, and provides real-time analytics through an event-driven architecture.
+The teachers can also create assignment and students can upload their answers for it within the deadline.Assignments can be assigned to sections
+
 
 ![Architecture Diagram](https://github.com/user-attachments/assets/339614cb-9560-4bb5-9184-dde836f29de3)
 
@@ -32,11 +35,14 @@ The application follows a modern microservices-inspired architecture with the fo
 ### System Architecture
 ![Architecture Diagram](https://github.com/user-attachments/assets/339614cb-9560-4bb5-9184-dde836f29de3)
 
+### Database Schema
+![db schema 1](https://github.com/user-attachments/assets/9ad96835-fd63-4e75-99dc-161e3854ed7e)
+![dbscehma 2](https://github.com/user-attachments/assets/ab3477fb-8683-44cf-8135-ee5892837925)
+
 ### Kafka Event Stream Architecture
 ![Kafka Architecture](https://github.com/user-attachments/assets/0f04d3a0-c006-4a9c-b0bb-062ce0960b48)
 
-### Database Schema
-![Database Schema](https://github.com/user-attachments/assets/e30e073a-df30-4ee6-824b-922660bf086c)
+
 
 ## 🔧 Tech Stack
 
@@ -51,17 +57,15 @@ The application follows a modern microservices-inspired architecture with the fo
 - **Docker**: Containerization
 - **Kubernetes**: Container orchestration
 - **Nginx**: Web server and reverse proxy
-- **Helm**: Kubernetes package management
+
 
 ### Messaging & Search
 - **Apache Kafka**: Event streaming platform
 - **Zookeeper**: Kafka coordination
-- **Elasticsearch**: Search and analytics engine
+- **Elasticsearch**: Searchengine
 
 ### Monitoring & Documentation
 - **DRF Spectacular**: API documentation with Swagger UI
-- **Prometheus**: Metrics collection
-- **Grafana**: Metrics visualization
 - **Kafka UI**: Kafka management interface
 - **Adminer**: Database administration
 
